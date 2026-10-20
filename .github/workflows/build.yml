@@ -52,4 +52,3 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: Quoridor-FA-v*.apk
-          overwrite_files: true
