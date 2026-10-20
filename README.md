@@ -50,7 +50,7 @@
 | `tests/` | مجموعه تست ۳۸ موردی هسته |
 | `scripts/build_apk.sh` | خط تولید APK: aapt2 → javac → d8 → zipalign → apksigner |
 | `docs/` | سند طراحی فنی + برنامه تست (۱۳ صفحه) |
-| `.github/workflows/` | ساخت خودکار APK و انتشار در Releases با هر تگ `v*` |
+| `.github/workflows/` | ساخت خودکار APK در هر تگ/dispatch (آرتیفکت) — انتشار Release با کلید اصلی به‌صورت دستی انجام می‌شود |
 
 ## 🔨 ساخت دستی
 
@@ -65,7 +65,8 @@ bash scripts/build_apk.sh
 
 ```bash
 git tag v1.0.3 && git push origin v1.0.3
-# GitHub Actions به‌صورت خودکار APK می‌سازد (با همان کلید از Secret) و به Releases می‌چسباند
+# GitHub Actions به‌صورت خودکار بیلد و آرتیفکت می‌سازد
+# انتشار Release (آپلود APK امضاشده با کلید اصلی) به‌صورت دستی انجام می‌شود
 ```
 
 ## 🔑 امضا
