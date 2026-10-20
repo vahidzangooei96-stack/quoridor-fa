@@ -112,6 +112,14 @@ public class BoardView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         if (game == null) return;
+        try {
+            drawBoard(canvas);
+        } catch (Throwable ignored) {
+            // drawing must never crash the app — skip the frame
+        }
+    }
+
+    private void drawBoard(Canvas canvas) {
         if (cell == 0) computeGeometry(getWidth(), getHeight());
         float boardSize = 9 * cell;
         float over = cell * 0.30f;

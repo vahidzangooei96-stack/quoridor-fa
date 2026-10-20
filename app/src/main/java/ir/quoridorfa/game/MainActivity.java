@@ -62,7 +62,8 @@ public class MainActivity extends Activity implements BoardView.GameCallback {
     private boolean wallHorizontal = true;
     private final ArrayDeque<int[]> undoStack = new ArrayDeque<>();
     private final Handler handler = new Handler(Looper.getMainLooper());
-    private ToneGenerator tone;
+    private ToneGenerator tone;          // created lazily — constructor can fail on some devices
+    private boolean toneBroken = false;
 
     private static final String[] DIFF_NAMES = {"آسان", "متوسط", "سخت"};
 
@@ -83,7 +84,35 @@ public class MainActivity extends Activity implements BoardView.GameCallback {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Global safety net: ANY uncaught crash (any thread, any callback) must
+        // never leave the user with a silent black screen — show diagnostics.
+        final Thread.UncaughtExceptionHandler systemHandler =
+                Thread.getDefaultUncaughtExceptionHandler();
+        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+            @Override public void uncaughtException(Thread t, Throwable e) {
+                try {
+                    runOnUiThread(new Runnable() {
+                        @Override public void run() {
+                            try {
+                                showFatalError(e);
+                            } catch (Throwable ignored) { }
+                        }
+                    });
+                    Thread.sleep(400);   // give the UI one frame
+                } catch (Throwable ignored) { }
+                if (systemHandler != null) systemHandler.uncaughtException(t, e);
+            }
+        });
         super.onCreate(savedInstanceState);
+        try {
+            buildUi();
+        } catch (Throwable t) {
+            // NEVER leave the user with a black screen: show what went wrong.
+            showFatalError(t);
+        }
+    }
+
+    private void buildUi() {
         try {
             fontRegular = Typeface.createFromAsset(getAssets(), "fonts/Vazirmatn-Regular.ttf");
             fontBold    = Typeface.createFromAsset(getAssets(), "fonts/Vazirmatn-Bold.ttf");
@@ -93,7 +122,8 @@ public class MainActivity extends Activity implements BoardView.GameCallback {
             fontBold = Typeface.DEFAULT_BOLD;
             fontMedium = Typeface.DEFAULT;
         }
-        tone = new ToneGenerator(AudioManager.STREAM_NOTIFICATION, 70);
+        // ToneGenerator is NOT created here — its constructor can crash on
+        // some devices; it is built lazily on first beep, fully guarded.
 
         root = new FrameLayout(this);
         root.setBackgroundColor(COL_BG);
@@ -102,6 +132,32 @@ public class MainActivity extends Activity implements BoardView.GameCallback {
         buildGamePanel();
         setContentView(root);
         showMenu();
+    }
+
+    /** Last-resort screen: visible diagnostics instead of a silent black screen. */
+    private void showFatalError(Throwable t) {
+        try {
+            android.widget.ScrollView sc = new android.widget.ScrollView(this);
+            LinearLayout ll = new LinearLayout(this);
+            ll.setOrientation(LinearLayout.VERTICAL);
+            ll.setPadding(dp(20), dp(40), dp(20), dp(20));
+            ll.setBackgroundColor(COL_BG);
+            TextView title = new TextView(this);
+            title.setText("متأسفانه خطایی رخ داد\nلطفاً از این صفحه عکس بگیرید و برای ما بفرستید");
+            title.setTextColor(COL_ACCENT2);
+            title.setTextSize(16);
+            title.setTypeface(fontBold != null ? fontBold : Typeface.DEFAULT_BOLD);
+            TextView detail = new TextView(this);
+            detail.setText(android.util.Log.getStackTraceString(t));
+            detail.setTextColor(COL_TEXT_DIM);
+            detail.setTextSize(11);
+            detail.setPadding(0, dp(16), 0, 0);
+            ll.addView(title);
+            ll.addView(detail);
+            sc.addView(ll);
+            setContentView(sc);
+        } catch (Throwable ignored) {
+        }
     }
 
     // ================= menu =================
@@ -201,7 +257,7 @@ public class MainActivity extends Activity implements BoardView.GameCallback {
             @Override public void onClick(View v) { showHelp(); }
         });
 
-        TextView ver = menuTitle("نسخه " + fa(1) + "." + fa(0) + "." + fa(0) + " — Quoridor FA", 12, COL_TEXT_DIM, false);
+        TextView ver = menuTitle("نسخه " + fa(1) + "." + fa(0) + "." + fa(1) + " — Quoridor FA", 12, COL_TEXT_DIM, false);
         LinearLayout.LayoutParams vp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         vp.topMargin = dp(16);
@@ -409,6 +465,14 @@ public class MainActivity extends Activity implements BoardView.GameCallback {
     }
 
     private void startGame(boolean vsAiMode) {
+        try {
+            startGameInner(vsAiMode);
+        } catch (Throwable t) {
+            showFatalError(t);
+        }
+    }
+
+    private void startGameInner(boolean vsAiMode) {
         vsAi = vsAiMode;
         game = new GameCore();
         undoStack.clear();
@@ -454,8 +518,13 @@ public class MainActivity extends Activity implements BoardView.GameCallback {
     }
 
     private void beep(int toneId) {
-        if (!soundOn || tone == null) return;
-        try { tone.startTone(toneId, 150); } catch (Exception ignored) { }
+        if (!soundOn || toneBroken) return;
+        try {
+            if (tone == null) tone = new ToneGenerator(AudioManager.STREAM_NOTIFICATION, 70);
+            tone.startTone(toneId, 150);
+        } catch (Throwable t) {
+            toneBroken = true;   // audio must never crash the game
+        }
     }
 
     // ---------- GameCallback ----------
@@ -504,23 +573,40 @@ public class MainActivity extends Activity implements BoardView.GameCallback {
         if (!vsAi || game.winner != -1 || game.turn != 1) return;
         boardLocked = true;
         refreshUi();
+        final GameCore gameRef = game;   // guard vs. restarts while AI thinks
         handler.postDelayed(new Runnable() {
             @Override public void run() {
                 new Thread(new Runnable() {
                     @Override public void run() {
-                        final int[] action = ai.chooseAction(game, 1, difficulty);
+                        final int[] action;
+                        try {
+                            action = ai.chooseAction(gameRef, 1, difficulty);
+                        } catch (Throwable t) {
+                            handler.post(new Runnable() {
+                                @Override public void run() {
+                                    boardLocked = false;
+                                    refreshUi();
+                                }
+                            });
+                            return;
+                        }
                         handler.post(new Runnable() {
                             @Override public void run() {
-                                boardLocked = false;
-                                if (action != null && game.winner == -1 && game.turn == 1) {
-                                    undoStack.push(game.snapshot());
-                                    game.applyAction(action);
-                                    beep(action[0] == GameCore.ACT_MOVE
-                                            ? ToneGenerator.TONE_PROP_BEEP
-                                            : ToneGenerator.TONE_PROP_BEEP2);
+                                try {
+                                    boardLocked = false;
+                                    if (game == gameRef && action != null
+                                            && game.winner == -1 && game.turn == 1) {
+                                        undoStack.push(game.snapshot());
+                                        game.applyAction(action);
+                                        beep(action[0] == GameCore.ACT_MOVE
+                                                ? ToneGenerator.TONE_PROP_BEEP
+                                                : ToneGenerator.TONE_PROP_BEEP2);
+                                    }
+                                    refreshUi();
+                                    if (game.winner != -1) announceWin();
+                                } catch (Throwable t) {
+                                    showFatalError(t);
                                 }
-                                refreshUi();
-                                if (game.winner != -1) announceWin();
                             }
                         });
                     }

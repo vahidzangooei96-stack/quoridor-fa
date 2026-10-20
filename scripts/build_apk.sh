@@ -7,8 +7,11 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SDK="${ANDROID_HOME:-/home/z/my-project/tools/android-sdk}"
 BT="$SDK/build-tools/35.0.0"
 AJ="$SDK/platforms/android-34/android.jar"
-VERSION="${VERSION:-1.0.0}"
+VERSION="${VERSION:-1.0.1}"
+VERSION="${VERSION#v}"   # allow passing tag names like v1.0.1
 OUT="$ROOT/build/apk"
+# versionCode derived from versionName: 1.0.1 -> 101 (monotonic for store updates)
+VERSION_CODE=$(echo "$VERSION" | awk -F. '{printf "%d%02d%02d", $1, $2, $3}' | sed 's/^0*//')
 
 if [ ! -x "$BT/aapt2" ]; then
   # try to install into the default runner SDK
@@ -25,7 +28,7 @@ echo "[1/6] aapt2 compile+link..."
 "$BT/aapt2" link -o "$OUT/base.apk" -I "$AJ" \
   --manifest "$ROOT/app/src/main/AndroidManifest.xml" \
   --min-sdk-version 21 --target-sdk-version 34 \
-  --version-code 1 --version-name "$VERSION" \
+  --version-code "$VERSION_CODE" --version-name "$VERSION" \
   -R "$OUT/res.zip" --java "$OUT/gen" --auto-add-overlay
 
 echo "[2/6] javac..."
@@ -38,9 +41,13 @@ echo "[3/6] d8 (dex)..."
 
 echo "[4/6] package..."
 (cd "$OUT/dex" && zip -q -j "$OUT/base.apk" classes.dex)
+# assets (fonts) MUST be packaged too — aapt2 link does not include them
+if [ -d "$ROOT/app/src/main/assets" ]; then
+  (cd "$ROOT/app/src/main" && zip -qr "$OUT/base.apk" assets)
+fi
 
 echo "[5/6] zipalign..."
-KS="$OUT/quoridor.keystore"
+KS="${QUORIDOR_KEYSTORE:-$ROOT/quoridor-signing.keystore}"
 if [ ! -f "$KS" ]; then
   keytool -genkeypair -keystore "$KS" -alias quoridor -keyalg RSA -keysize 2048 -validity 10000 \
     -storepass quoridorfa2026 -keypass quoridorfa2026 \
