@@ -9,6 +9,10 @@ BT="$SDK/build-tools/35.0.0"
 AJ="$SDK/platforms/android-34/android.jar"
 VERSION="${VERSION:-1.0.1}"
 VERSION="${VERSION#v}"   # allow passing tag names like v1.0.1
+# guard: VERSION must be numeric (x[.y[.z]]) — manual dispatches pass refs like "main"
+if ! printf '%s' "$VERSION" | grep -qE '^[0-9]+(\.[0-9]+)*$'; then
+  VERSION="1.0.1"
+fi
 OUT="$ROOT/build/apk"
 # versionCode derived from versionName: 1.0.1 -> 101 (monotonic for store updates)
 VERSION_CODE=$(echo "$VERSION" | awk -F. '{printf "%d%02d%02d", $1, $2, $3}' | sed 's/^0*//')
