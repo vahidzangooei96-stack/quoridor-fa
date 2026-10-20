@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>کوریدور | Quoridor فارسی — سند طراحی فنی و برنامه تست</title>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+@page { size: 720px 1020px; margin: 0; }
+:root {
+  --bg-dark: #0a1628;
+  --page-bg: #f5f8fc;
+  --card-bg: #ffffff;
+  --section-bg: #edf2f9;
+  --fill-bg: #e4ecf5;
+  --table-head: #1a4a7a;
+  --stripe: #eef3fa;
+  --border: #c0d0e2;
+  --accent: #2d7ab3;
+  --accent-lum: #4da8da;
+  --text: #142840;
+  --muted: #52718d;
+  --cover-text: #e8f0f8;
+  --cover-muted: #7a9bb8;
+}
+html, body {
+  margin: 0; padding: 0; width: 720px;
+  background: #f5f8fc;
+  color: var(--text);
+  font-family: 'Vazirmatn', 'DejaVu Sans', sans-serif;
+  font-size: 15px;
+  line-break: strict; word-break: normal; overflow-wrap: break-word;
+}
+@media screen {
+  html { height: auto; display: flex; justify-content: center; background: #0a1628; }  body { transform-origin: top center; scale: min(1, calc(100vw / 720)); margin: 16px auto; box-shadow: 0 0 50px rgba(0,0,0,0.45); }
+}
+* { box-sizing: border-box; }
+p, td, li { line-break: strict; overflow-wrap: break-word; }
+p { font-size: 14.5px; line-height: 1.9; text-align: justify; margin: 0 0 9px; }
+ul, ol { margin: 0 0 12px; padding-right: 22px; }
+li { font-size: 14px; line-height: 1.8; margin-bottom: 4px; text-align: right; }
+strong { font-weight: 700; }
+.ltr { direction: ltr; unicode-bidi: isolate; font-family: 'DejaVu Sans Mono', monospace; font-size: 0.88em; background: var(--fill-bg); padding: 1px 5px; border-radius: 4px; color: #1a4a7a; }
+
+/* ---------- COVER ---------- */
+.cover {
+  width: 720px; height: 1020px; position: relative;
+  background: var(--bg-dark);
+  break-after: page; overflow: hidden;
+}
+.cover-glow {
+  position: absolute; inset: 0; overflow: hidden; z-index: 1;
+}
+.cover-glow .g1, .cover-glow .g2 { position: absolute; width: 70%; height: 45%; border-radius: 50%; }
+.cover-glow .g1 { top: -12%; right: -15%; background: radial-gradient(circle, rgba(45,122,179,0.08) 0%, rgba(45,122,179,0) 70%); }
+.cover-glow .g2 { bottom: -10%; left: -12%; background: radial-gradient(circle, rgba(77,168,218,0.06) 0%, rgba(77,168,218,0) 70%); }
+.cover-frame {
+  position: absolute; top: 72px; bottom: 72px; left: 54px; right: 54px;
+  border: 2px solid var(--accent-lum); z-index: 2; pointer-events: none;
+}
+.cover-content { position: absolute; inset: 0; z-index: 3; }
+.cv-kicker {
+  position: absolute; top: 132px; right: 96px; left: 96px;
+  color: var(--accent-lum); font-size: 12.5px; font-weight: 500;
+}
+.cv-kicker .latin { font-family: 'DejaVu Sans Mono', monospace; font-size: 10.5px; letter-spacing: 4px; opacity: 0.85; direction: ltr; unicode-bidi: isolate; }
+.cv-hero { position: absolute; top: 208px; right: 96px; left: 96px; }
+.cv-hero .fa-name { font-size: 66px; font-weight: 900; color: var(--cover-text); line-height: 1.2; text-shadow: 0 0 24px rgba(77,168,218,0.25); }
+.cv-hero .en-name { font-family: 'DejaVu Sans Mono', monospace; direction: ltr; unicode-bidi: isolate; text-align: right; font-size: 15px; letter-spacing: 7px; color: var(--accent-lum); margin-top: 10px; font-weight: 400; }
+.cv-summary {
+  position: absolute; top: 458px; right: 96px;
+  max-width: 470px; color: var(--cover-muted);
+  font-size: 14px; line-height: 1.95; text-align: justify; font-weight: 300;
+}
+.cv-meta { position: absolute; top: 652px; right: 96px; }
+.cv-meta .row { display: flex; align-items: baseline; margin-bottom: 13px; }
+.cv-meta .k { color: var(--accent-lum); font-size: 12px; min-width: 118px; }
+.cv-meta .v { color: var(--cover-text); font-size: 14.5px; font-weight: 500; }
+.cv-meta .v .latin { font-family: 'DejaVu Sans Mono', monospace; font-size: 12.5px; }
+.cv-footer {
+  position: absolute; bottom: 112px; right: 96px; left: 96px;
+  display: flex; justify-content: space-between; align-items: baseline;
+}
+.cv-footer .fa { color: var(--cover-muted); font-size: 11.5px; }
+.cv-footer .en { font-family: 'DejaVu Sans Mono', monospace; direction: ltr; unicode-bidi: isolate; color: var(--cover-muted); font-size: 10.5px; letter-spacing: 3px; }
+
+/* ---------- MAIN CONTENT ---------- */
+.main-content {
+  background: var(--page-bg);
+  padding: 54px 60px 46px;
+}
+.sec { break-after: avoid; break-inside: avoid; margin-top: 22px; margin-bottom: 12px; }
+.sec:first-child { margin-top: 0; }
+.sec-tag {
+  display: inline-block; background: var(--table-head); color: #ffffff;
+  font-size: 11px; font-weight: 500; padding: 3px 12px; border-radius: 20px;
+  margin-bottom: 9px;
+}
+.sec-title { font-size: 24px; font-weight: 800; color: var(--text); line-height: 1.4; }
+.divider { width: 64px; height: 3px; background: var(--accent); border-radius: 2px; margin-top: 8px; }
+.sub-title { font-size: 16.5px; font-weight: 700; color: #1a4a7a; margin: 18px 0 8px; break-after: avoid; }
+.note {
+  background: var(--section-bg); border-right: 3px solid var(--table-head);
+  border-radius: 6px; padding: 11px 14px; font-size: 13.5px; line-height: 1.85;
+  margin: 0 0 11px; break-inside: avoid; text-align: justify; color: var(--text);
+}
+.note b { color: #1a4a7a; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; max-width: 100%; margin-bottom: 12px; }
+.chip { flex: 0 1 auto; min-width: 60px; max-width: 100%; background: var(--fill-bg); border: 1px solid var(--border); border-radius: 16px; padding: 4px 12px; font-size: 12px; color: #1a4a7a; font-weight: 500; }
+
+/* cards */
+.cards { display: flex; flex-wrap: wrap; gap: 10px; max-width: 100%; margin: 0 0 11px; }
+.card {
+  flex: 1 1 44%; min-width: 240px; max-width: 100%;
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-right: 3px solid var(--accent); border-radius: 8px;
+  padding: 11px 14px; break-inside: avoid;
+}
+.card h4 { margin: 0 0 6px; font-size: 13.5px; font-weight: 700; color: #1a4a7a; }
+.card p { font-size: 12.5px; line-height: 1.8; margin: 0; color: var(--text); }
+.card .mono { font-size: 11px; }
+
+/* tables */
+table { width: 100%; border-collapse: collapse; table-layout: fixed; margin: 0 0 6px; background: #fff; }
+thead { display: table-header-group; }
+tr { break-inside: avoid; }
+th {
+  background: var(--table-head); color: #ffffff; font-weight: 600;
+  font-size: 12px; padding: 8px 9px; text-align: right; line-height: 1.6;
+}
+td {
+  font-size: 12px; padding: 7px 9px; border: 1px solid var(--border);
+  vertical-align: top; line-height: 1.75; text-align: right;
+}
+tbody tr:nth-child(odd) td { background: var(--stripe); }
+.tbl-keep { break-inside: avoid; }
+.cap { font-size: 11.5px; color: var(--muted); text-align: center; margin: 2px 0 12px; }
+
+/* board diagram */
+.figure { break-inside: avoid; margin: 4px 0 6px; display: flex; justify-content: center; }
+.board-wrap { direction: ltr; }
+.board {
+  display: grid; grid-template-columns: repeat(9, 31px); grid-template-rows: repeat(9, 31px);
+  background: #ffffff; border: 2px solid #1a4a7a; width: fit-content;
+}
+.b-c { position: relative; border: 0.5px solid #d7e1ee; }
+.b-c .pawn { position: absolute; inset: 5px; border-radius: 50%; box-shadow: 0 2px 4px rgba(10,22,40,0.3); }
+.pawn-a { background: #1a4a7a; }
+.pawn-b { background: #4da8da; }
+.wall-h { height: 6px; background: #0a1628; border-radius: 2px; align-self: center; width: 100%; margin-top: -3px; z-index: 5; }
+.wall-v { width: 6px; background: #0a1628; border-radius: 2px; justify-self: center; height: 100%; margin-left: -3px; z-index: 5; }
+.goal-top { background: #eaf3fb; }
+.goal-bottom { background: #f3f8fc; }
+
+/* architecture */
+.arch { display: flex; flex-direction: column; gap: 8px; margin-bottom: 13px; }
+.arch-layer {
+  background: var(--fill-bg); border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px 14px; break-inside: avoid;
+}
+.arch-layer .t { font-size: 13px; font-weight: 700; color: #1a4a7a; margin-bottom: 6px; }
+.arch-layer .items { display: flex; flex-wrap: wrap; gap: 6px; max-width: 100%; }
+.arch-layer .items span { background: #ffffff; border: 1px solid var(--border); border-radius: 5px; padding: 3px 9px; font-size: 11.5px; color: var(--text); }
+.arch-arrow { text-align: center; color: var(--accent); font-size: 15px; line-height: 0.6; }
+
+/* wireframes */
+.wires { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; margin: 6px 0 4px; }
+.phone { width: 252px; border: 2px solid #1a4a7a; border-radius: 14px; background: #ffffff; padding: 10px; break-inside: avoid; }
+.phone .ph-title { text-align: center; font-size: 11.5px; color: var(--muted); margin-bottom: 8px; }
+.ph-hud { background: var(--fill-bg); border-radius: 6px; padding: 6px 8px; font-size: 10.5px; color: #1a4a7a; display: flex; justify-content: space-between; margin-bottom: 6px; }
+.ph-board { display: grid; grid-template-columns: repeat(9, 22px); grid-template-rows: repeat(9, 22px); border: 1.5px solid #1a4a7a; margin: 0 auto 8px; width: fit-content; }
+.ph-b { border: 0.5px solid #d7e1ee; position: relative; }
+.ph-b .mp { position: absolute; inset: 4px; border-radius: 50%; }
+.ph-btns { display: flex; gap: 6px; justify-content: center; }
+.ph-btn { background: var(--section-bg); border: 1px solid var(--border); border-radius: 5px; font-size: 10.5px; padding: 4px 9px; color: #1a4a7a; }
+.ph-menu { display: flex; flex-direction: column; gap: 7px; padding: 4px 6px; }
+.ph-mi { background: var(--fill-bg); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 10.5px; text-align: center; color: #1a4a7a; font-weight: 500; }
+
+/* ending */
+.ending {
+  width: 720px; height: 1020px; background: var(--bg-dark);
+  break-before: page; overflow: hidden; position: relative;
+}
+.ending-frame { position: absolute; top: 72px; bottom: 72px; left: 54px; right: 54px; border: 2px solid var(--accent-lum); }
+.ending-content { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0 90px; }
+.ending-content .big { color: var(--cover-text); font-size: 30px; font-weight: 900; margin-bottom: 18px; }
+.ending-content .desc { color: var(--cover-muted); font-size: 14px; line-height: 2; text-align: center; margin-bottom: 26px; }
+.ending-content .meta-en { font-family: 'DejaVu Sans Mono', monospace; direction: ltr; unicode-bidi: isolate; color: var(--accent-lum); font-size: 10.5px; letter-spacing: 3px; }
+.ending-content .fa-meta { color: var(--cover-muted); font-size: 12px; margin-top: 12px; }
+</style>
+</head>
+<body>
+<!-- ================= COVER ================= -->
+<div class="cover">
+  <div class="cover-glow"><div class="g1"></div><div class="g2"></div></div>
+  <div class="cover-frame"></div>
+  <div class="cover-content">
+    <div class="cv-kicker">سند طراحی فنی و برنامه تست<br><span class="latin">TECHNICAL DESIGN &amp; TEST PLAN</span></div>
+    <div class="cv-hero">
+      <div class="fa-name">کوریدور</div>
+      <div class="en-name">QUORIDOR FA</div>
+    </div>
+    <div class="cv-summary">
+      طراحی فنی اولیه و برنامه تست برای بازی تخته‌ای راه‌یاب «کوریدور» بر پایه قوانین رسمی گیگامیک: پیاده‌سازی موتور قوانین مستقل از رابط گرافیکی، هوش مصنوعی سه‌سطحی با جست‌وجوی آگاهانه، رابط کاربری فارسی راست‌چین، و مسیر ساخت و انتشار نسخه اندروید در کافه‌بازار همراه با ورک‌فلوی خودکار GitHub Actions.
+    </div>
+    <div class="cv-meta">
+      <div class="row"><div class="k">وضعیت</div><div class="v">پیش‌نویس ۰٫۱ — در انتظار تأیید طرح</div></div>
+      <div class="row"><div class="k">موتور پیشنهادی</div><div class="v"><span class="latin">Unity 6 LTS (C#)</span> — موتور بازگشت: <span class="latin">Godot 4</span></div></div>
+      <div class="row"><div class="k">پلتفرم هدف</div><div class="v">اندروید ۷٫۰ به بالا — گوشی و تبلت</div></div>
+      <div class="row"><div class="k">تاریخ</div><div class="v">مهر ۱۴۰۵ — اکتبر ۲۰۲۶</div></div>
+    </div>
+    <div class="cv-footer">
+      <div class="fa">هدف نهایی: انتشار در کافه‌بازار</div>
+      <div class="en">ANDROID • UNITY • OFFLINE</div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MAIN CONTENT ================= -->
+<div class="main-content">
+
+  <!-- TOC -->
+  <div class="sec">
+    <div class="sec-tag">فهرست</div>
+    <div class="sec-title">فهرست مطالب</div>
+    <div class="divider"></div>
+  </div>
+  <div class="chips">
+    <span class="chip">۱. خلاصه اجرایی و اهداف</span>
+    <span class="chip">۲. تطبیق قوانین رسمی</span>
+    <span class="chip">۳. مقایسه Godot و Unity</span>
+    <span class="chip">۴. معماری فنی و مدل داده</span>
+    <span class="chip">۵. طراحی هوش مصنوعی</span>
+    <span class="chip">۶. طراحی UI/UX فارسی</span>
+    <span class="chip">۷. برنامه تست</span>
+    <span class="chip">۸. نقشه راه فازبندی</span>
+    <span class="chip">۹. انتشار در کافه‌بازار و گیت‌هاب</span>
+    <span class="chip">۱۰. محدودیت‌ها، ریسک‌ها و گام بعدی</span>
+  </div>
+
+  <!-- SECTION 1 -->
+  <div class="sec">
+    <div class="sec-tag">بخش ۱</div>
+    <div class="sec-title">خلاصه اجرایی و اهداف پروژه</div>
+    <div class="divider"></div>
+  </div>
+  <p>«کوریدور» پیاده‌سازی اندرویدی بازی تخته‌ای <span class="ltr">Quoridor</span> است؛ بازی راه‌یاب دو‌نفره‌ای که در سال ۱۹۹۷ توسط میرکو مارکِزی طراحی و توسط شرکت گیگامیک منتشر شد و همان سال جایزه <span class="ltr">Mensa Mind Game</span> را دریافت کرد. هدف این پروژه ساخت نسخه‌ای واقعی، قابل اجرا، قابل تست و قابل ویرایش است که قوانین رسمی را بدون انحراف پیاده‌سازی کند، رابط کاربری کاملاً فارسی و راست‌چین داشته باشد و در نهایت برای فرایند انتشار در کافه‌بازار آماده شود. این سند فقط «طراحی فنی اولیه و برنامه تست» را مشخص می‌کند و تا پیش از تأیید طرح، کدنویسی آغاز نخواهد شد.</p>
+  <p>سه اهداف کمی، مرز موفقیت نسخه اول را تعیین می‌کنند. نخست، حجم خروجی نصب‌پذیر زیر حدود ۴۰ مگابایت باشد تا دانلود در شبکه‌های ایران کم‌هزینه بماند. دوم، هوش مصنوعی در بدترین حالت حداکثر یک و نیم ثانیه روی گوشی میان‌رده برای تصمیم‌گیری نیاز داشته باشد و در این بازه رابط کاربری قفل نشود. سوم، موتور قوانین در مجموعه‌ای از بازی‌های تصادفی (حداقل ۵۰۰ بازی کامل) بدون هیچ استثنا، حرکت غیرقانونی یا وضعیت بن‌بست اجرا شود. این سه عدد به‌عنوان معیار پذیرش در برنامه تست بخش ۷ دنبال می‌شوند.</p>
+  <p>دامنه نسخه اول (MVP) شامل موارد زیر است: بازی دونفره روی یک دستگاه، بازی تک‌نفره مقابل هوش مصنوعی در سه سطح آسان و متوسط و سخت، انتخاب رنگ مهره و ظاهر صفحه، آموزش تعاملی پنج‌مرحله‌ای برای مبتدیان، امکان مکث و ادامه و شروع مجدد بازی، و ثبت محلی آمار برد و باخت. حالت‌های آنلاین، جدول رتبه‌بندی و خرید درون‌برنامه‌ای عمداً از این دامنه خارج شده‌اند و فقط پس از تکمیل و پایداری هسته اصلی در فازهای بعدی بررسی خواهند شد؛ این اولویت‌بندی ریسک فنی پروژه را به‌شکل معناداری کاهش می‌دهد.</p>
+  <div class="note"><b>اصل راهنمای معماری:</b> قوانین بازی از رابط گرافیکی کامل جدا نگه داشته می‌شود تا بتوان تمام منطق بازی را بدون اجرای صحنه، به‌صورت خودکار و سریع تست کرد. هر قانون رسمی بازی به یک یا چند تست خودکار قابل تبدیل است و هیچ رفتاری خارج از این قوانین تعریف نمی‌شود.</div>
+  <!-- SECTION 2 -->
+  <div class="sec">
+    <div class="sec-tag">بخش ۲</div>
+    <div class="sec-title">تطبیق قوانین رسمی Quoridor</div>
+    <div class="divider"></div>
+  </div>
+  <p>پیش از هر پیاده‌سازی، قوانین با دفترچه رسمی سازنده (گیگامیک) و منابع مرجع استاندارد تطبیق داده شد. خلاصه قواعد تأییدشده در جدول زیر آمده و ستون سوم آن، شناسه‌های تستی بخش ۷ را نشان می‌دهد؛ یعنی هر قانون از همان ابتدا به یک مشخصه تست‌پذیر تبدیل شده است. صفحه بازی ۸۱ خانه (۹×۹) دارد، مجموع دیوارهای موجود در بازی ۲۰ عدد است که در حالت دونفره ۱۰ دیوار به هر بازیکن می‌رسد و بازیکنان در مرکز دو ضلع مقابل صفحه شروع می‌کنند.</p>
+  <table>
+    <colgroup><col style="width:26%"><col style="width:52%"><col style="width:22%"></colgroup>
+    <thead><tr><th>موضوع</th><th>قاعده رسمی</th><th>شناسه تست</th></tr></thead>
+    <tbody>
+      <tr><td>صفحه و مهره‌ها</td><td>۹×۹ خانه؛ هر بازیکن یک مهره دارد که در مرکز ضلع مقابل حریف قرار می‌گیرد.</td><td class="ltr">T0</td></tr>
+      <tr><td>هدف برد</td><td>نخستین بازیکنی که مهره‌اش به هر خانه‌ای از ردیف مقابل شروع برسد، برنده است.</td><td class="ltr">T3</td></tr>
+      <tr><td>حرکت مهره</td><td>در هر نوبت یک کنش: حرکت یک خانه به بالا، پایین، چپ یا راست، یا قرار دادن یک دیوار.</td><td class="ltr">M1–M3</td></tr>
+      <tr><td>پرش مستقیم</td><td>اگر مهره حریف در خانه مجاور باشد و میان دو مهره دیواری نباشد، پرش مستقیم به خانه پشت حریف مجاز است، به شرط آزاد بودن آن خانه و نبود دیوار در آن ضلع.</td><td class="ltr">J1–J2</td></tr>
+      <tr><td>حرکت جانبی</td><td>اگر خانه پشت حریف مسدود باشد (دیوار یا لبه صفحه)، حرکت جانبی به یکی از دو خانه مجاور حریف مجاز است؛ به شرط آزاد بودن آن خانه و نبود دیوار در ضلع مربوط. چند پرش متوالی و پرش از روی دیوار ممنوع است.</td><td class="ltr">J3–J4</td></tr>
+      <tr><td>قرار دادن دیوار</td><td>دیوار در شیار بین دو خانه قرار می‌گیرد، دو خانه مجاور را مسدود می‌کند و می‌تواند افقی یا عمودی باشد؛ در صورت داشتن دیوار کافی، جایگزین حرکت مهره می‌شود.</td><td class="ltr">W1</td></tr>
+      <tr><td>محدودیت‌های دیوار</td><td>دیوار نباید روی دیوار قبلی منطبق شود یا آن را به‌شکل غیرمجاز قطع کند؛ پس از قرار گرفتن، جابه‌جا یا برداشته نمی‌شود.</td><td class="ltr">W2–W4</td></tr>
+      <tr><td>قانون مسیر باز</td><td>قرار دادن دیوار نباید مسیر رسیدن هیچ‌یک از دو بازیکن به ردیف هدفش را به‌طور کامل مسدود کند.</td><td class="ltr">W5–W6</td></tr>
+      <tr><td>شمارش دیوار</td><td>در حالت استاندارد دونفره هر بازیکن ۱۰ دیوار دارد و پس از اتمام، فقط حرکت مهره برای او مجاز است.</td><td class="ltr">W7–W8</td></tr>
+      <tr><td>نوبت‌ها</td><td>حرکت مهره یا قرار دادن دیوار، یک نوبت کامل محسوب می‌شود؛ نوبت‌ها به‌نوبت و بدون پرش بین بازیکنان می‌چرخند.</td><td class="ltr">T1–T2</td></tr>
+    </tbody>
+  </table>
+  <div class="cap">جدول ۱ — قواعد رسمی تأییدشده و نگاشت آن‌ها به شناسه‌های تست</div>
+
+  <div class="sub-title">۲.۱ — نمایش شماتیک صفحه بازی</div>
+  <div class="figure">
+    <div class="board-wrap">
+      <div class="board">
+        <div class="b-c goal-top"></div><div class="b-c goal-top"></div><div class="b-c goal-top"></div><div class="b-c goal-top"></div><div class="b-c goal-top"><span class="pawn pawn-b"></span></div><div class="b-c goal-top"></div><div class="b-c goal-top"></div><div class="b-c goal-top"></div><div class="b-c goal-top"></div>
+        <div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div>
+        <div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div>
+        <div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div>
+        <div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div>
+        <div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div>
+        <div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div>
+        <div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div><div class="b-c"></div>
+        <div class="b-c goal-bottom"></div><div class="b-c goal-bottom"></div><div class="b-c goal-bottom"></div><div class="b-c goal-bottom"></div><div class="b-c goal-bottom"><span class="pawn pawn-a"></span></div><div class="b-c goal-bottom"></div><div class="b-c goal-bottom"></div><div class="b-c goal-bottom"></div><div class="b-c goal-bottom"></div>
+        <div class="wall-h" style="grid-row: 6; grid-column: 4 / 6;"></div>
+        <div class="wall-v" style="grid-row: 3 / 5; grid-column: 4;"></div>
+      </div>
+    </div>
+  </div>
+  <div class="cap">شکل ۱ — صفحه ۹×۹؛ مهره آبی از پایین به بالا و مهره روشن از بالا به پایین حرکت می‌کند؛ نمونه‌ای دیوار افقی و عمودی روی شیارها نشان داده شده است</div>
+  <p>دو نکته ظریف در قواعد پرش، منشأ رایج‌ترین باگ‌های پیاده‌سازی Quoridor است و در تست‌ها به‌طور ویژه پوشش داده می‌شود. نخست، پرش مستقیم فقط وقتی مجاز است که خانه پشت حریف داخل صفحه باشد، فاقد دیوار در ضلع ورودی باشد و خودش خالی باشد؛ برخلاف شطرنج، هیچ سقفی برای «زنجیره پرش» وجود ندارد و در قواعد رسمی چند مهره پشت‌سرهم قابل پرش نیست. دوم، در حرکت جانبی، دیوارهایی که پشت حریف قرار دارند باید در هر دو جهت جانبی بررسی شوند؛ یعنی اگر یکی از دو خانه جانبی با دیوار بسته شده باشد، فقط خانه دیگر مجاز است و اگر هر دو بسته باشند، حرکت مهره در آن نوبت ممکن نیست.</p>
+
+  <!-- SECTION 3 -->
+  <div class="sec">
+    <div class="sec-tag">بخش ۳</div>
+    <div class="sec-title">مقایسه Godot 4 و Unity و انتخاب موتور</div>
+    <div class="divider"></div>
+  </div>
+  <p>طبق درخواست پروژه، پیش از انتخاب، دو موتور از نظر حجم خروجی، عملکرد و نگهداری مقایسه شد. برای یک بازی تخته‌ای دوبعدی، هر دو موتور از نظر امکانات بیش از حد کافی‌اند؛ بنابراین تفاوت‌های تعیین‌کننده در حجم خروجی، ابزار تست خودکار، خط لوله انتشار (CI) و ریسک‌های منطقه‌ای است. داده‌های جدول بر اساس مستندات رسمی و گزارش‌های عمومی نگهبان‌های نسخه ۲۰۲۶ تنظیم شده و اعداد حجم، تقریبی و وابسته به تنظیمات پروژه‌اند.</p>
+  <table>
+    <colgroup><col style="width:24%"><col style="width:38%"><col style="width:38%"></colgroup>
+    <thead><tr><th>معیار</th><th>Unity 6 LTS</th><th>Godot 4.4</th></tr></thead>
+    <tbody>
+      <tr><td>زبان برنامه‌نویسی</td><td>سی‌شارپ (C#) با ماشین مجازی Mono/IL2CPP؛ مناسب معماری Core مستقل برای تست</td><td>GDScript یا C#؛ ساده و سریع در چرخه اجرا</td></tr>
+      <tr><td>حجم خروجی اندروید (بازی ۲بعدی)</td><td>حدود ۲۵ تا ۴۰ مگابایت با IL2CPP و حذف کدهای بلااستفاده</td><td>حدود ۳۰ تا ۴۵ مگابایت؛ در نسخه‌های 4.x قابل بهینه‌سازی اما پایه بزرگ‌تر از گزینه ۳.x</td></tr>
+      <tr><td>لایسنس و هزینه</td><td>نسخه Personal رایگان برای درآمد زیر ۲۰۰ هزار دلار در سال؛ نیازمند حساب و فعال‌سازی لایسنس؛ کارمزد اجرایی (Runtime Fee) سپتامبر ۲۰۲۴ لغو شد</td><td>میت (MIT)؛ بدون حساب، بدون دروازه درآمدی، بدون ریسک تغییر سیاست تجاری</td></tr>
+      <tr><td>عملکرد دوبعدی و باتری</td><td>بسیار خوب؛ کنترل دقیق کیفیت با تنظیمات Build</td><td>بسیار خوب؛ موتور سبک‌تر و مصرف حافظه پایین‌تر در اجرا</td></tr>
+      <tr><td>تست خودکار</td><td>Unity Test Framework بالغ: تست EditMode برای هسته و PlayMode برای UI</td><td>ابزارهای اجتماعی (GUT و gdUnit)؛ مناسب اما کمتر استانداردشده</td></tr>
+      <tr><td>خط لوله انتشار (CI)</td><td>GameCI مستند و پایدار: unity-test-runner و unity-builder برای Android</td><td>godot-ci؛ کاربردی اما با مستندات کمتر</td></tr>
+      <tr><td>اکوسیستم و نگهداری</td><td>پشتیبانی LTS بلندمدت، Asset Store بزرگ، منابع آموزشی فراوان</td><td>جامعه رو به رشد، بدون وابستگی به فروشنده، نسخه‌های سریع‌تر</td></tr>
+      <tr><td>ریسک منطقه‌ای (ایران)</td><td>فعال‌سازی و احراز لایسنس ممکن است به‌دلیل تحریم‌ها با محدودیت مواجه شود؛ نیازمند آزمایش در فاز صفر</td><td>بدون محدودیت؛ بارگیری و انتشار بدون حساب</td></tr>
+    </tbody>
+  </table>
+  <div class="cap">جدول ۲ — مقایسه موتورها برای دامنه مشخص این پروژه</div>
+  <div class="note"><b>تصمیم:</b> مطابق اولویت اعلام‌شده، <b>Unity 6 LTS با C#</b> انتخاب می‌شود؛ اختلاف فنی دو موتور برای این بازی تخته‌ای تعیین‌کننده نیست و Unity از نظر تست خودکار و CI برتری عملی دارد. تنها ریسک جدی، احتمال محدودیت فعال‌سازی لایسنس از داخل ایران است؛ به همین دلیل نخستین گام فاز صفر، «آزمون فعال‌سازی لایسنس» تعریف شده است و در صورت شکست، پروژه بدون اتلاف زمان به Godot 4.4 (با همان معماری Core مستقل و همان برنامه تست) بازمی‌گردد. انتخاب ساختار لایه‌ای معماری (بخش ۴) عمداً به‌گونه‌ای انجام شده که این تعویض موتور، فقط لایه Presentation را تغییر دهد و موتور قوانین و تست‌های آن دست‌نخورده باقی بمانند.</div>
+  <p>تنظیمات فنی اندروید در نسخه Unity به این شرح ثابت می‌شود: حداقل نسخه سیستم‌عامل اندروید ۷٫۰ (API 24)، نسخه هدف API 34 به بالا مطابق الزامات روز بازار، معماری‌های ARMv7 و ARM64 هم‌زمان، روش تبدیل اسکریپت IL2CPP برای عملکرد و سازگاری بهتر، و غیرفعال بودن همه مجوزهای سیستمی غیرضروری (بازی کاملاً آفلاین است و به اینترنت مجوزی نیاز ندارد). نسخه‌بندی بازی با قاعده سه‌جزئی (مثلاً ۱٫۰٫۰) و شماره افزایشی versionCode برای هر رهانش پیش می‌رود.</p>
+  <!-- SECTION 4 -->
+  <div class="sec">
+    <div class="sec-tag">بخش ۴</div>
+    <div class="sec-title">معماری فنی و مدل داده</div>
+    <div class="divider"></div>
+  </div>
+  <p>معماری بر پایه جداسازی کامل «منطق بازی» از «ارائه گرافیکی» طراحی شده است. لایه هسته (Core) مجموعه‌ای از کلاس‌های خالص C# است که هیچ وابستگی به موتور بازی ندارد و با تست‌های EditMode در کمتر از یک ثانیه اجرا می‌شود؛ لایه ارائه فقط رویدادها را از هسته می‌گیرد و لمس کاربر را به دستورهای هسته تبدیل می‌کند. این جداسازی همان الزام پروژه است که «قوانین بتوان بدون اجرای صحنه بازی تست شوند» و هم‌چنین تعویض موتور در صورت نیاز را ممکن می‌کند.</p>
+  <div class="arch">
+    <div class="arch-layer">
+      <div class="t">لایه ارائه (Presentation) — وابسته به موتور</div>
+      <div class="items"><span class="ltr">BoardView</span><span class="ltr">InputController</span><span class="ltr">HUD / Screens</span><span class="ltr">AnimationFX</span><span class="ltr">AudioManager</span><span class="ltr">Localization (fa)</span></div>
+    </div>
+    <div class="arch-arrow">&#8595; فرمان کاربر / &#8592; رویداد وضعیت</div>
+    <div class="arch-layer">
+      <div class="t">لایه هسته (Core) — خالص C#، بدون وابستگی به موتور</div>
+      <div class="items"><span class="ltr">RulesEngine</span><span class="ltr">MoveValidator</span><span class="ltr">WallValidator</span><span class="ltr">PathFinder (BFS)</span><span class="ltr">TurnManager</span><span class="ltr">AIAgent (سه سطح)</span><span class="ltr">SaveCodec (JSON)</span></div>
+    </div>
+    <div class="arch-arrow">&#8595; خواندن/نوشتن وضعیت</div>
+    <div class="arch-layer">
+      <div class="t">لایه داده (Persistence) — دستگاهی، آفلاین</div>
+      <div class="items"><span class="ltr">GameSave (فایل JSON)</span><span class="ltr">StatsStore</span><span class="ltr">SettingsStore</span></div>
+    </div>
+  </div>
+  <div class="cap">شکل ۲ — سه لایه معماری؛ جریان وابستگی فقط از بالا به پایین است و هسته هیچ شناختی از UI ندارد</div>
+  <div class="sub-title">۴.۱ — مدل داده وضعیت بازی</div>
+  <p>کل وضعیت یک بازی در یک ساختار واحد به نام <span class="ltr">GameState</span> نگهداری می‌شود تا ذخیره‌سازی، بازیابی، بازگشت حرکت و تولید بازی‌های آزمایشی همگی بر پایه یک منبع واحد حقیقت انجام شوند. فیلدهای اصلی این ساختار عبارت‌اند از: موقعیت دو مهره به‌صورت مختصات (ستون، ردیف) در بازه ۰ تا ۸، تعداد دیوار باقی‌مانده هر بازیکن، فهرست دیوارهای قرارگرفته با کدگذاری مشخص، بازیکن صاحب نوبت، وضعیت بازی (در جریان، برنده، متوقف) و تاریخچه کنش‌ها برای امکان شروع مجدد دقیق همان نبرد. دیوارها با سه‌تایی <span class="ltr">(x, y, orientation)</span> کدگذاری می‌شوند که در آن نقطه مرجع، خانه بالایی (برای افقی) یا خانه راستی (برای عمودی) دیوار است؛ این کدگذاری فهرست دیوارها را قابل استفاده مستقیم در اعتبارسنجی هم‌پوشانی می‌کند.</p>
+  <p>هر ماژول مسئولیت مرزی مشخصی دارد. موتور قوانین تنها «فهرست کنش‌های قانونی» و «اعمال کنش» را می‌شناسد و درباره بهبود بازیکنی نمی‌اندیشد؛ اعتبارسنجی دیوار هم‌پوشانی را با یک دیکشنری از نقطه‌های مرجع چک می‌کند و قانون مسیر باز را با دو جست‌وجوی BFS پس از شبیه‌سازی قرارگیری دیوار می‌سنجد؛ محاسبه مسیر با BFS از ردیف هدف به عقب عمل می‌کند تا کوتاه‌ترین فاصله هر مهره از هر نقطه‌ای در یک پاس محاسبه شود. این تفکیک باعث می‌شود هوش مصنوعی بتواند همان عملیات‌های عمومی را بدون دسترسی به هیچ داده پنهانی استفاده کند.</p>
+  <div class="cards">
+    <div class="card"><h4>موتور قوانین و اعتبارسنجی حرکت</h4><p>تولید حرکت‌های قانونی مهره شامل چهار جهت، پرش مستقیم و حرکت جانبی؛ بازگرداندن دلیل رد شدن برای بازخورد بصری حرکت غیرمجاز.</p></div>
+    <div class="card"><h4>اعتبارسنجی دیوار و مسیر</h4><p>بررسی هم‌پوشانی و تقاطع دیوارها، شمارش سهمیه، و اجرای قانون مسیر باز برای هر دو بازیکن پس از هر شبیه‌سازی قرارگیری.</p></div>
+    <div class="card"><h4>وضعیت و نوبت‌ها</h4><p>مدیریت چرخش نوبت، تشخیص برد، مکث/ادامه، شروع مجدد و بازگشت به‌عقب (Undo) به‌عنوان قابلیت محلی.</p></div>
+    <div class="card"><h4>ذخیره‌سازی و آمار</h4><p>ذخیره وضعیت جریان بازی در فایل JSON، بازیابی هنگام بازگشتن به برنامه و ثبت برد/باخت هر سطح AI به‌صورت محلی.</p></div>
+  </div>
+
+  <!-- SECTION 5 -->
+  <div class="sec">
+    <div class="sec-tag">بخش ۵</div>
+    <div class="sec-title">طراحی هوش مصنوعی</div>
+    <div class="divider"></div>
+  </div>
+  <p>هوش مصنوعی از قوانین واقعی بازی استفاده می‌کند و هرگز به اطلاعات غیرمجاز دسترسی ندارد؛ تنها ورودی آن همان ساختار <span class="ltr">GameState</span> و همان فهرست کنش‌های قانونی است که به بازیکن انسانی نیز ارائه می‌شود. پایه محاسباتی هر سه سطح، الگوریتم BFS برای تعیین کوتاه‌ترین فاصله هر مهره تا ردیف هدف است که از ردیف هدف به عقب اجرا می‌شود و هزینه آن روی صفحه ۹×۹ بی‌اهمیت است. بر اساس ارزیابی انجام‌شده، Monte Carlo Tree Search برای نسخه اولیه انتخاب نشد؛ قدرت بالاتر آن در موقعیت‌های پیچیده با هزینه محاسباتی سنگین و رفتار غیرقطعی روی گوشی‌های ضعیف همراه است، در حالی که Minimax با هرس آلفا-بتا در همین بازی، قدرت قابل‌اتکا با زمان پاسخ قطعی و قابل‌کنترل ارائه می‌دهد. MCTS به‌عنوان مسیر تحقیق آینده در فازهای پس از انتشار بررسی خواهد شد.</p>
+  <table>
+    <colgroup><col style="width:16%"><col style="width:30%"><col style="width:34%"><col style="width:20%"></colgroup>
+    <thead><tr><th>سطح</th><th>رویکرد</th><th>جزئیات تصمیم‌گیری</th><th>بودجه زمانی</th></tr></thead>
+    <tbody>
+      <tr><td>آسان</td><td>انتخاب حریصانه از میان کنش‌های قانونی</td><td>ارزیابی ساده اختلاف فاصله BFS؛ انتخاب تصادفی از میان سه کنش برتر؛ دیوار فقط در موارد پراکنده</td><td class="ltr">&lt; 150 ms</td></tr>
+      <tr><td>متوسط</td><td>ارزیابی تاکتیکی یک‌مرحله‌ای</td><td>بررسی همه حرکت‌ها و ۳۰ کاندیدای دیوار؛ ارزش دیوار = افزایش فاصله حریف منهای افزایش فاصله خود؛ انتخاب بهترین</td><td class="ltr">&lt; 500 ms</td></tr>
+      <tr><td>سخت</td><td>Minimax عمق ۲ تا ۳ + هرس آلفا-بتا</td><td>ترتیب‌دهی کنش‌ها (دیوارهای مجاور مهره‌ها اول)، ارزیابی موقعیت‌محور در برگ‌ها، کاهش خودکار عمق در صورت نزدیک شدن به بودجه زمانی</td><td class="ltr">&le; 1500 ms</td></tr>
+    </tbody>
+  </table>
+  <div class="cap">جدول ۳ — سه سطح هوش مصنوعی و مشخصات تصمیم‌گیری</div>
+  <p>تابع ارزیابی برگ‌ها در سطح سخت از سه مؤلفه ترکیبی می‌شود: اختلاف کوتاه‌ترین فاصله دو بازیکن تا هدف (وزن اصلی)، اختلاف تعداد دیوارهای باقی‌مانده (وزن حدوداً یک‌سوم وزن اول، چون دیوار در دست یعنی تهدید آینده) و جریمه موقعیت‌هایی که مهره در نزدیکی لبه صفحه با کمبود راه فرار است. اجرای محاسبات در رشته جدا از رشته اصلی انجام می‌شود تا رابط کاربری هرگز قفل نشود؛ در صورت عبور از بودجه زمانی، جست‌وجو با بهترین نتیجه موجود تا آن لحظه قطع می‌شود (هرس زمانی). صحت رفتار هر سه سطح در بخش ۷ با بازی‌های متقابل و محدودیت‌های زمانی تست می‌شود.</p>
+  <!-- SECTION 6 -->
+  <div class="sec">
+    <div class="sec-tag">بخش ۶</div>
+    <div class="sec-title">طراحی UI/UX فارسی</div>
+    <div class="divider"></div>
+  </div>
+  <p>رابط کاربری کاملاً فارسی، راست‌چین و مینیمال طراحی می‌شود؛ فونت اصلی «وزیرمتن» است که خوانایی بالایی در اندازه‌های کوچک دارد و اعداد در متن فارسی با ارقام فارسی نمایش داده می‌شوند. سبک بصری بر پایه سایه‌پردازی ملایم، گوشه‌های گرد، تضاد رنگی مناسب و انیمیشن‌های کوتاه (۱۲۰ تا ۱۶۰ میلی‌ثانیه) تعریف شده است و هیچ دارایی با منبع نامشخص استفاده نخواهد شد؛ تمام نمادها و گرافیک یا به‌صورت برداری در همین پروژه ساخته می‌شوند یا از کتابخانه‌های دارای مجوز آزاد استفاده می‌کنند. همه دکمه‌های لمسی حداقل ۴۸ واحد مستقل از چگالی اندازه دارند تا روی گوشی‌های کوچک هم راحت لمس شوند.</p>
+  <div class="wires">
+    <div class="phone">
+      <div class="ph-title">صفحه اصلی</div>
+      <div class="ph-menu">
+        <div class="ph-mi">شروع بازی — تک‌نفره با هوش مصنوعی</div>
+        <div class="ph-mi">بازی دونفره روی یک دستگاه</div>
+        <div class="ph-mi">آموزش قوانین</div>
+        <div class="ph-mi">آمار و تنظیمات</div>
+      </div>
+      <div class="ph-btns"><span class="ph-btn">انتخاب رنگ مهره</span><span class="ph-btn">ظاهر صفحه</span></div>
+    </div>
+    <div class="phone">
+      <div class="ph-title">صفحه بازی</div>
+      <div class="ph-hud"><span>نوبت: شما</span><span>دیوارها: ۱۰</span><span class="ltr">II</span></div>
+      <div class="ph-board">
+        <div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"><span class="mp" style="background:#4da8da"></span></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div>
+        <div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div>
+        <div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div>
+        <div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div>
+        <div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div>
+        <div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div>
+        <div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div>
+        <div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div>
+        <div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"><span class="mp" style="background:#1a4a7a"></span></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div><div class="ph-b"></div>
+      </div>
+      <div class="ph-btns"><span class="ph-btn">مهره</span><span class="ph-btn">دیوار افقی / عمودی</span><span class="ph-btn">منو</span></div>
+    </div>
+  </div>
+  <div class="cap">شکل ۳ — وایرفریم دو صفحه کلیدی؛ در صفحه بازی، نوار بالا وضعیت نوبت و دیوارها را نشان می‌دهد و نوار پایین جابه‌جایی بین حالت مهره و دیوار را ممکن می‌کند</div>
+  <p>تعامل لمسی صفحه بازی سه اصل دارد. نخست، هر کنش دو مرحله‌ای است: کاربر مهره یا دیوار را انتخاب می‌کند، پیش‌نمایش می‌بیند و با تأیید، کنش ثبت می‌شود؛ لغو انتخاب پیش از ثبت با لمس بیرون از ناحیه یا دکمه لغو همیشه ممکن است. دوم، بازخورد بصری فوری وجود دارد: خانه‌های حرکت مجاز با هایلایت روشن نمایش داده می‌شوند، پیش‌نمایش دیوار به‌شکل افقی یا عمودی زیر انگشت جابه‌جا می‌شود و با لمس دوم جهت آن چرخانده می‌شود؛ کنش غیرمجاز با چشمک رنگ خطا و پیام کوتاه فارسی رد می‌شود و صفحه نمی‌لرزد مگر برای دیوار هم‌پوشان که دلیلش با یک نقطه قرمز مشخص می‌شود. سوم، پس از هر کنش، وضعیت نوبت و شمارنده دیوارها بی‌درنگ به‌روز می‌شود و در پایان بازی، پوشش نتیجه با گزینه‌های «بازی مجدد» و «بازگشت» نمایش داده می‌شود.</p>
+  <p>آموزش تعاملی پنج مرحله‌ای برای مبتدیان طراحی می‌شود: آشنایی با صفحه و هدف، حرکت مهره، پرش روی حریف، قرار دادن دیوار و قانون مسیر باز. در هر مرحله، کاربر همان کنش را با دست خود اجرا می‌کند و مراحل با متن کوتاه فارسی و هایلایت راهنما همراه است؛ تکمیل آموزش در آمار ثبت می‌شود تا هنگام اولین اجرا به‌صورت پیشنهادی نمایش یابد. صفحه آمار و تنظیمات، برد و باخت هر سه سطح AI و بازی دونفره را نشان می‌دهد و تنظیمات شامل انتخاب رنگ مهره، سه تم ظاهر صفحه، روشن/خاموش بودن صدا و بازآموزی است.</p>
+
+  <!-- SECTION 7 -->
+  <div class="sec">
+    <div class="sec-tag">بخش ۷</div>
+    <div class="sec-title">برنامه تست</div>
+    <div class="divider"></div>
+  </div>
+  <p>تست‌ها با Unity Test Framework اجرا می‌شوند: همه تست‌های هسته قوانین، هوش مصنوعی و ذخیره‌سازی به‌صورت EditMode (بدون نیاز به اجرای صحنه) و تست‌های تعامل لمسی به‌صورت PlayMode. قاعده کلی این است که هر بند جدول قوانین بخش ۲ دقیقاً به یک یا چند تست نگاشته شده باشد؛ هیچ ادعایی درباره نبود باگ بدون اجرای همین مجموعه مطرح نمی‌شود و گزارش اجرای تست‌ها به‌عنوان یکی از خروجی‌های پروژه تحویل داده خواهد شد. ماتریس زیر نسخه اولیه است و در فاز ساخت، هر شناسه به یک فایل تست مشخص با چند سناریو تبدیل می‌شود.</p>
+  <table>
+    <colgroup><col style="width:20%"><col style="width:52%"><col style="width:28%"></colgroup>
+    <thead><tr><th>گروه</th><th>پوشش تست</th><th>روش اجرا</th></tr></thead>
+    <tbody>
+      <tr><td class="ltr">M — حرکت مهره</td><td>حرکت در چهار جهت داخل صفحه، رد حرکت به خانه خارج صفحه، رد حرکت روی مهره حریف بدون شرایط پرش، حرکت از بین دو دیوار</td><td>EditMode — واحد</td></tr>
+      <tr><td class="ltr">J — پرش و حرکت جانبی</td><td>پرش مستقیم قانونی، رد پرش در وجود دیوار میان دو مهره، رد پرش به خانه مسدود (دیوار یا لبه)، حرکت جانبی درست به خانه آزاد، رد حرکت جانبی وقتی هر دو خانه جانبی مسدودند، عدم امکان پرش زنجیره‌ای</td><td>EditMode — واحد</td></tr>
+      <tr><td class="ltr">W — دیوار</td><td>قرارگیری افقی و عمودی قانونی، رد هم‌پوشانی کامل، رد تقاطع غیرمجاز، رد دیوار خارج از محدوده، کم شدن صحیح سهمیه، رد دیوار وقتی سهمیه صفر است، قانون مسیر باز برای هر دو بازیکن با BFS پس از هر قرارگیری، عدم جابه‌جایی دیوار ثبت‌شده</td><td>EditMode — واحد</td></tr>
+      <tr><td class="ltr">T — نوبت و برد</td><td>چرخش درست نوبت‌ها، رد دو کنش متوالی یک بازیکن، تشخیص برد در رسیدن به هر خانه ردیف هدف، پایان قطعی بازی پس از برد و قفل کنش‌های بعدی</td><td>EditMode — واحد</td></tr>
+      <tr><td class="ltr">S — ذخیره و بازیابی</td><td>ذخیره وضعیت میانی، بازیابی یکسان بودن کامل وضعیت، رفتار پس‌زمینه/بازگشت برنامه، شروع مجدد به وضعیت اولیه استاندارد</td><td>EditMode — واحد</td></tr>
+      <tr><td class="ltr">A — هوش مصنوعی</td><td>قانونی بودن همه کنش‌های هر سه سطح در بازی کامل، رعایت بودجه زمانی هر سطح در بدترین حالت، برتری آماری سطح سخت بر متوسط و متوسط بر آسان در ۲۰۰ بازی متقابل (مثلاً سخت بیش از ۷۰٪ برد)، واکنش درست به دیوارهای جدید، عدم دسترسی به ساختارهای غیرمجاز</td><td>EditMode — واحد + بازی متقابل</td></tr>
+      <tr><td class="ltr">U — UI و دستگاه</td><td>لمس تک‌مرحله‌ای و دومرحله‌ای، لغو پیش از ثبت، بازخورد حرکت غیرمجاز، نمایش صحیح فارسی و راست‌چین، چرخش صفحه و ابعاد تبلت، رفتار پس‌زمینه شدن برنامه و بازگشت به وضعیت ذخیره‌شده</td><td>PlayMode + دستگاه واقعی</td></tr>
+      <tr><td class="ltr">F — بازی تصادفی</td><td>اجرای ۵۰۰ بازی کامل با کنش‌های تصادفی قانونی: بدون هیچ استثنا، بدون وضعیت بن‌بست، بدون نقض قوانین؛ بررسی ناوردایی‌ها پس از هر کنش (تعداد دیوارها، سازگاری فهرست دیوارها و وضعیت)</td><td>EditMode — fuzz</td></tr>
+    </tbody>
+  </table>
+  <div class="cap">جدول ۴ — ماتریس تست؛ هر شناسه به یک یا چند سناریوی اجراپذیر تبدیل می‌شود</div>
+  <div class="note"><b>معیار پذیرش نسخه ۱٫۰:</b> صددرصد پاس شدن تست‌های گروه‌های M تا S، پاس کامل محدودیت زمانی در گروه A، برتری آماری معنادار سطوح AI مطابق جدول، صفر کرش در fuzz و در تست دستگاه روی حداقل دو گوشی و یک تبلت واقعی. تست دستگاه شامل بررسی لمس، نمایش، عملکرد و رفتار هنگام رفتن برنامه به پس‌زمینه است؛ گزارش نتایج و فهرست شفاف خطاهای باقی‌مانده (در صورت وجود) در پایان فاز ۵ ارائه می‌شود.</div>
+  <!-- SECTION 8 -->
+  <div class="sec">
+    <div class="sec-tag">بخش ۸</div>
+    <div class="sec-title">نقشه راه فازبندی اجرا</div>
+    <div class="divider"></div>
+  </div>
+  <p>اجرا مرحله‌به‌مرحله پیش می‌رود و هر فاز یک «خروجی قابل تحویل» و یک «دروازه کیفیت» دارد؛ عبور از هر دروازه یعنی همه تست‌های همان فاز سبز شده‌اند و بن‌بست یا رگرسیون ایجاد نشده است. تخمین‌ها بر اساس کار پاره‌وقت یک نفر با تجربه تنظیم شده‌اند و مجموع مسیر از تصمیم موتور تا نسخه آماده ارسال به بازار، حدود دو تا چهار هفته را پوشش می‌دهد. هیچ فازی بدون تست‌های سبز بسته نمی‌شود و قابلیت جدید فقط پس از پایداری فاز قبل اضافه می‌گردد.</p>
+  <table>
+    <colgroup><col style="width:22%"><col style="width:46%"><col style="width:32%"></colgroup>
+    <thead><tr><th>فاز</th><th>محتوا و خروجی</th><th>دروازه کیفیت</th></tr></thead>
+    <tbody>
+      <tr><td>F0 — راه‌اندازی و تصمیم موتور</td><td>آزمون فعال‌سازی لایسنس Unity از ایران؛ ساخت ریپوی گیت‌هاب، پوشه‌بندی پروژه و ورک‌فلو اولیه CI</td><td>لایسنس فعال یا تعویض قطعی به Godot</td></tr>
+      <tr><td>F1 — هسته قوانین و تست‌ها</td><td>پیش‌نویس کامل Core شامل حرکت، پرش، دیوار، BFS و وضعیت بازی + همه تست‌های گروه M و J و W و T</td><td>همه تست‌های هسته سبز</td></tr>
+      <tr><td>F2 — رابط دونفره پایه</td><td>صفحه بازی لمسی، نوبت‌ها، بازخورد بصری، مکث/ادامه/شروع مجدد، ذخیره و بازیابی</td><td>پاس گروه S و تست لمسی پایه</td></tr>
+      <tr><td>F3 — هوش مصنوعی سه سطح</td><td>آسان، متوسط، سخت با بودجه زمانی؛ صفحه انتخاب سطح؛ اجرای بازی‌های متقابل برای سنجش قدرت</td><td>پاس گروه A شامل برتری آماری</td></tr>
+      <tr><td>F4 — آموزش، آمار و تنظیمات</td><td>آموزش تعاملی پنج‌مرحله‌ای، آمار محلی، انتخاب رنگ مهره و تم ظاهر، صدا و تنظیمات</td><td>تست‌های UI تکمیلی سبز</td></tr>
+      <tr><td>F5 — پالیش و بهینه‌سازی</td><td>انیمیشن‌ها، افکت صوتی آزاد، بهینه‌سازی مصرف حافظه، تست روی دستگاه‌های واقعی و تبلت</td><td>صفر کرش؛ زمان AI در بودجه</td></tr>
+      <tr><td>F6 — ساخت و انتشار</td><td>تکمیل ورک‌فلوی GitHub Actions، تولید APK امضاشده release، مستندات ساخت و انتشار، آماده‌سازی اقلام فروشگاه</td><td>نصب و اجرای موفق نسخه release</td></tr>
+    </tbody>
+  </table>
+  <div class="cap">جدول ۵ — فازهای اجرا با خروجی و دروازه کیفیت هر فاز</div>
+
+  <!-- SECTION 9 -->
+  <div class="sec">
+    <div class="sec-tag">بخش ۹</div>
+    <div class="sec-title">انتشار در کافه‌بازار و تحویل APK در گیت‌هاب</div>
+    <div class="divider"></div>
+  </div>
+  <p>مسیر انتشار در کافه‌بازار بر اساس راهنمای رسمی پنل توسعه‌دهندگان بازار تنظیم شده است: ثبت‌نام در پیشخان و قبول قرارداد عرضه برنامه، پرداخت اشتراک سالانه و تکمیل اطلاعات ناشر، سپس ایجاد برنامه جدید و طی مراحل بارگذاری فایل، اطلاعات پایه و پشتیبانی، تصاویر و آیکون و در نهایت درخواست بررسی. بازی به‌دلیل آفلاین بودن و ذخیره‌سازی صرفاً محلی، به سیاست حریم خصوصی ساده‌ای بسنده می‌کند که تصریح می‌کند هیچ داده شخصی جمع‌آوری یا ارسال نمی‌شود. شناسه بسته پیشنهادی <span class="ltr">ir.quoridorfa.game</span> است که پیش از بارگذاری نهایی، یکتایی آن در بازار بررسی و در صورت نیاز اصلاح می‌شود.</p>
+  <div class="cards">
+    <div class="card"><h4>اقلام فروشگاهی</h4><p>آیکون ۵۱۲×۵۱۲ پیکسل، حداقل سه اسکرین‌شات از صفحه بازی و منو، توضیحات فارسی کامل، رده سنی مناسب و نام نمایشی «کوریدور | Quoridor فارسی».</p></div>
+    <div class="card"><h4>امضا و نسخه‌بندی</h4><p>کلیدواژه امن keystore برای امضای release با پشتیبان‌گیری محافظت‌شده؛ نسخه‌بندی سه‌جزئی و versionCode افزایشی در هر رهانش؛ بازار از AAB نیز با ابزار امضا پشتیبانی می‌کند.</p></div>
+    <div class="card"><h4>آماده‌سازی فنی APK</h4><p>خروجی release با IL2CPP و ARMv7/ARM64؛ تست نصب و اجرا روی دستگاه واقعی پیش از ارسال؛ بررسی مجوزها (بدون هیچ مجوز اینترنتی) و فیلدهای SDK.</p></div>
+    <div class="card"><h4>بررسی بازار</h4><p>پس از درخواست انتشار، نتیجه بررسی در پنل و با ایمیل اعلام می‌شود؛ در صورت ایراد، اصلاح و رهانش جدید در همان برنامه انجام می‌شود.</p></div>
+  </div>
+  <div class="sub-title">۹.۱ — ورک‌فلوی خودکار ساخت APK با GitHub Actions</div>
+  <p>برای تحویل خودکار فایل APK در گیت‌هاب، ورک‌فلوی CI با مجموعه GameCI طراحی می‌شود. با هر تگ نسخه‌گذاری‌شده (مثلاً <span class="ltr">v1.0.0</span>) سه مرحله اجرا می‌شود: نخست اجرای تست‌های EditMode با <span class="ltr">unity-test-runner</span> و توقف ورک‌فلو در صورت شکست؛ سپس ساخت APK اندروید با <span class="ltr">unity-builder</span> و پارامتر <span class="ltr">targetPlatform: Android</span> در محیط لینوکسی GitHub؛ و در پایان، پیوست فایل خروجی به نسخه (Release) همان تگ در گیت‌هاب تا کاربر بتواند مستقیماً آخرین APK را از صفحه Releases دانلود و نصب کند. اعتبارنامه‌های لایسنس Unity در قالب Secrets مخفی ریپو ذخیره می‌شوند و کش پوشه Library برای سرعت بخشیدن به ساخت‌های بعدی فعال می‌شود؛ امضای نهایی APK با کلیدواژه امن نیز در همین ورک‌فلو یا روی سیستم توسعه‌دهنده انجام می‌گیرد. نتیجه این خط لوله این است که هر نسخه تازه، هم تست شده است و هم به‌صورت خودکار قابل دانلود — بدون نیاز به هیچ ابزار ساخت دستی.</p>
+
+  <!-- SECTION 10 -->
+  <div class="sec">
+    <div class="sec-tag">بخش ۱۰</div>
+    <div class="sec-title">محدودیت‌ها، ریسک‌ها و گام بعدی</div>
+    <div class="divider"></div>
+  </div>
+  <p>شفافیت درباره محدودیت‌ها بخشی از تعهد پروژه است. محیط فعلی امکان تولید کامل سورس، تست‌های NUnit/GameCI، مستندات و اقلام فروشگاهی را دارد، اما اجرای Unity Editor و Android SDK برای ساخت نهایی APK در این محیط در دسترس نیست؛ بنابراین APK از مسیر ورک‌فلوی GitHub Actions (روی زیرساخت گیت‌هاب) یا سیستم شخصی شما با Unity نصب‌شده تولید خواهد شد و هیچ فایل ساختگی یا گزارش تست جعلی ارائه نمی‌شود. گزارش‌های تست واقعی پس از اجرای نخستین ورک‌فلو در فاز صفر و یک تولید و به خروجی‌های پروژه پیوست می‌گردند.</p>
+  <table>
+    <colgroup><col style="width:30%"><col style="width:14%"><col style="width:56%"></colgroup>
+    <thead><tr><th>ریسک</th><th>سطح</th><th>راهکار پیش‌بینی‌شده</th></tr></thead>
+    <tbody>
+      <tr><td>محدودیت فعال‌سازی لایسنس Unity از ایران</td><td>بالا</td><td>آزمون در نخستین روز F0؛ در صورت شکست، تعویض به Godot 4.4 با حفظ معماری هسته و تمام برنامه تست</td></tr>
+      <tr><td>کندی AI روی گوشی‌های ضعیف</td><td>متوسط</td><td>هرس زمانی و کاهش تطبیقی عمق جست‌وجو؛ اجرای محاسبات در رشته جداگانه؛ سقف ۱٫۵ ثانیه در سطح سخت</td></tr>
+      <tr><td>تنوع دستگاه‌های اندرویدی</td><td>متوسط</td><td>تست روی حداقل دو گوشی و یک تبلت واقعی؛ طرح واکنش‌گرا برای نسبت‌های مختلف صفحه</td></tr>
+      <tr><td>تغییر الزامات فنی بازار</td><td>پایین</td><td>پیگیری سالانه راهنمای پنل توسعه‌دهندگان و به‌روزرسانی targetSdk در هر نسخه اصلی</td></tr>
+    </tbody>
+  </table>
+  <div class="cap">جدول ۶ — ریسک‌های شناخته‌شده و راهکارها</div>
+  <p><b>گام بعدی:</b> این سند برای بازبینی شما ارائه شده است. تا پیش از تأیید صریح طرح، هیچ کدی نوشته نخواهد شد. پس از تأیید (یا اعمال اصلاحات درخواستی)، فاز صفر با آزمون لایسنس و راه‌اندازی ریپوی گیت‌هاب آغاز می‌شود و نسخه قابل بازی نخست، در پایان فاز ۲ برای بررسی تحویل داده خواهد شد. اگر مایلید در همین مرحله بخشی از طراحی تغییر کند — مثلاً عمق جست‌وجوی AI، ترتیب فازها یا ساختار صفحه‌ها — همین سند به‌روزرسانی و نسخه تازه‌ای از آن ارائه می‌شود.</p>
+</div>
+
+<!-- ================= ENDING ================= -->
+<div class="ending">
+  <div class="ending-frame"></div>
+  <div class="ending-content">
+    <div class="big">در انتظار تأیید طرح</div>
+    <div class="desc">این سند، طراحی فنی اولیه و برنامه تست پروژه «کوریدور» است.<br>پیش از تأیید، کدنویسی آغاز نمی‌شود؛ پس از تأیید، اجرا از فاز صفر آغاز خواهد شد.</div>
+    <div class="meta-en">QUORIDOR FA • TECHNICAL DESIGN &amp; TEST PLAN</div>
+    <div class="fa-meta">نسخه ۰٫۱ — مهر ۱۴۰۵</div>
+  </div>
+</div>
+</body>
+</html>

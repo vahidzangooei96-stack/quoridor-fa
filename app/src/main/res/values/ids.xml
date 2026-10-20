@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="tag_name" type="id" />
+    <item name="tag_walls" type="id" />
+    <item name="tag_dot" type="id" />
+    <item name="tag_card" type="id" />
+</resources>

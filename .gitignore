@@ -1,0 +1,24 @@
+# --- build artifacts ---
+build/
+*.idsig
+*.apk.idsig
+
+# --- signing material (never commit!) ---
+quoridor.keystore
+*.jks
+*.keystore
+
+# --- local tools / env ---
+.ghtoken
+tools/
+local.properties
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.idea/
+*.iml
+.vscode/
+
+# --- root-level build outputs (canonical copy lives in apk/) ---
+/Quoridor-FA-v*.apk
